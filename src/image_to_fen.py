@@ -49,7 +49,10 @@ class ChessboardPredictor:
         )
 
         tile_certainties = np.array(
-            [probabilities[prediction] for probabilities, prediction in zip(guess_prob, guessed)]
+            [
+                probabilities[prediction]
+                for probabilities, prediction in zip(guess_prob, guessed)
+            ]
         ).reshape([8, 8])[::-1, :]
         label_names = " KQRBNPkqrbnp"
         piece_names = ["1" if label == 0 else label_names[label] for label in guessed]
@@ -73,6 +76,7 @@ class ChessboardPredictor:
 
     def close(self) -> None:
         self.sess.close()
+
 
 def get_fen_from_image(image_path: str = IMAGE_PATH) -> tuple[str, np.ndarray]:
     image = load_image.load_image(image_path)
