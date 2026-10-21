@@ -2,4 +2,3 @@ tensorflow
 numpy
 Pillow
 python-chess
-stockfish

@@ -1,8 +1,5 @@
 import numpy as np
 import PIL.Image
-import argparse
-from time import time
-from load_image import *
 
 
 def nonmax_suppress_1d(arr, winsize=5):
@@ -29,7 +26,6 @@ def findChessboardCorners(img_arr_gray, noise_threshold=8000):
     gy_neg = -gy.copy()
     gy_neg[gy_neg < 0] = 0
 
-    num_px = img_arr_gray.shape[0] * img_arr_gray.shape[1]
     hough_gx = gx_pos.sum(axis=1) * gx_neg.sum(axis=1)
     hough_gy = gy_pos.sum(axis=0) * gy_neg.sum(axis=0)
 
@@ -117,7 +113,6 @@ def findChessboardCorners(img_arr_gray, noise_threshold=8000):
     kernel = kernel / np.linalg.norm(kernel)
 
     k = 0
-    n = max(len(sub_seqs_x), len(sub_seqs_y))
     final_corners = None
     best_score = None
 
@@ -180,10 +175,10 @@ def getAllSequences(seq, min_seq_len=7, err_px=5):
 
 
 def getChessTilesColor(img, corners):
-    height, width, depth = img.shape
-    if depth != 3:
+    if img.ndim != 3 or img.shape[2] != 3:
         print("Need RGB color image input")
         return None
+    height, width, _ = img.shape
 
     padl_x = max(0, -corners[0])
     padl_y = max(0, -corners[1])
@@ -272,41 +267,3 @@ def findGrayscaleTilesInImage(img):
     tiles = getChessTilesGray(img_arr, corners)
 
     return tiles, corners
-
-
-def main(url):
-    print("Loading url %s..." % url)
-    color_img, url = load_image.load_image(url)
-
-    if color_img is None:
-        print("Couldn't load url: %s" % url)
-        return
-
-    if color_img.mode != "RGB":
-        color_img = color_img.convert("RGB")
-    print("Processing...")
-    a = time()
-    img_arr = np.asarray(color_img.convert("L"), dtype=np.float32)
-    corners = findChessboardCorners(img_arr)
-    print("Took %.4fs" % (time() - a))
-
-    if corners is not None:
-        print("\tFound corners for %s: %s" % (url, corners))
-        print("Visualization link functionality is not defined.")
-    else:
-        print("\tNo corners found in image")
-
-
-if __name__ == "__main__":
-    np.set_printoptions(suppress=True, precision=2)
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "urls",
-        default=["https://i.redd.it/1uw3h772r0fy.png"],
-        metavar="urls",
-        type=str,
-        nargs="*",
-    )
-    args = parser.parse_args()
-    for url in args.urls:
-        main(url)

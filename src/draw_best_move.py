@@ -1,147 +1,99 @@
-import numpy as np
-from PIL import ImageDraw
-import chessboard_finder
-import load_image
-import argparse
-
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+import numpy as np
+import chess
+from PIL import ImageDraw
+
+import chessboard_finder
+import load_image
 from config import IMAGE_PATH, OUTPUT_PATH
 
 
-def algebraic_to_coords(square, invert_fen=False):
-    file = ord(square[0].lower()) - ord("a")
-    rank = int(square[1]) - 1
-    if invert_fen:
-        return file, rank
-    else:
-        return file, 7 - rank
+def crop_chessboard(image, corners):
+    return image.crop(tuple(int(coordinate) for coordinate in corners))
 
 
-def draw_arrow(draw, start, end, color=(255, 0, 0), width=4, arrowhead=18):
+def draw_arrow(draw, start, end, color, width, arrowhead):
     import math
-
-    bg_color = color + (180,)
 
     dx = end[0] - start[0]
     dy = end[1] - start[1]
     angle = math.atan2(dy, dx)
     length = math.hypot(dx, dy)
-
     draw.line([start, end], fill=color, width=width)
 
-    headlen = min(arrowhead, length * 0.4)
-
-    for side in [-1, 1]:
-        angle2 = angle + side * math.radians(30)
-        x2 = end[0] - headlen * math.cos(angle2)
-        y2 = end[1] - headlen * math.sin(angle2)
-        draw.line([end, (x2, y2)], fill=color, width=width)
-
-
-def crop_chessboard(img, corners):
-    x0, y0, x1, y1 = corners
-    return img.crop((x0, y0, x1, y1))
+    head_length = min(arrowhead, length * 0.4)
+    for side in (-1, 1):
+        head_angle = angle + side * math.radians(30)
+        point = (
+            end[0] - head_length * math.cos(head_angle),
+            end[1] - head_length * math.sin(head_angle),
+        )
+        draw.line([end, point], fill=color, width=width)
 
 
 def draw_best_move(
-    white_move=None, black_move=None, output_path=None, invert_fen=False
-):
-    img = load_image.load_image(IMAGE_PATH)
-    if img is None:
-        raise ValueError(f"Couldn't load image: {IMAGE_PATH}")
-
-    img_arr = np.asarray(img.convert("L"), dtype=np.float32)
-    corners = chessboard_finder.findChessboardCorners(img_arr)
+    white_move: str | None = None,
+    black_move: str | None = None,
+    output_path: str | None = None,
+    image_path: str = IMAGE_PATH,
+) -> str:
+    image = load_image.load_image(image_path)
+    corners = chessboard_finder.findChessboardCorners(
+        np.asarray(image.convert("L"), dtype=np.float32)
+    )
     if corners is None:
-        raise ValueError("Couldn't find chessboard in image..")
+        raise ValueError(f"Couldn't find a chessboard in image: {image_path}")
 
-    cropped_img = crop_chessboard(img.convert("RGB"), corners)
-    draw = ImageDraw.Draw(cropped_img)
-    x0, y0, x1, y1 = 0, 0, cropped_img.height, cropped_img.width
-    board_width = y1 - y0
-    board_height = x1 - x0
-    square_w = board_width / 8
-    square_h = board_height / 8
+    board_image = crop_chessboard(image.convert("RGB"), corners)
+    draw = ImageDraw.Draw(board_image)
+    square_width = board_image.width / 8
+    square_height = board_image.height / 8
 
-    if white_move:
-        src, dst = white_move[:2], white_move[2:]
-        src_file, src_rank = algebraic_to_coords(src, invert_fen)
-        dst_file, dst_rank = algebraic_to_coords(dst, invert_fen)
-        src_xy = (
-            y0 + src_file * square_w + square_w / 2,
-            x0 + src_rank * square_h + square_h / 2,
+    for move, color in ((white_move, (255, 0, 0)), (black_move, (0, 0, 255))):
+        if move is None:
+            continue
+
+        chess_move = chess.Move.from_uci(move)
+        source = chess.square_name(chess_move.from_square)
+        destination = chess.square_name(chess_move.to_square)
+        source_file = ord(source[0]) - ord("a")
+        source_rank = 7 - (int(source[1]) - 1)
+        destination_file = ord(destination[0]) - ord("a")
+        destination_rank = 7 - (int(destination[1]) - 1)
+        start = (
+            (source_file + 0.5) * square_width,
+            (source_rank + 0.5) * square_height,
         )
-        dst_xy = (
-            y0 + dst_file * square_w + square_w / 2,
-            x0 + dst_rank * square_h + square_h / 2,
+        end = (
+            (destination_file + 0.5) * square_width,
+            (destination_rank + 0.5) * square_height,
         )
+        line_width = max(2, int(min(square_width, square_height) // 10))
         draw_arrow(
             draw,
-            src_xy,
-            dst_xy,
-            color=(255, 0, 0),
-            width=max(2, int(min(square_w, square_h) // 10)),
-            arrowhead=int(min(square_w, square_h) // 2.5),
-        )
-
-    if black_move:
-        src, dst = black_move[:2], black_move[2:]
-        src_file, src_rank = algebraic_to_coords(src, invert_fen)
-        dst_file, dst_rank = algebraic_to_coords(dst, invert_fen)
-        src_xy = (
-            y0 + src_file * square_w + square_w / 2,
-            x0 + src_rank * square_h + square_h / 2,
-        )
-        dst_xy = (
-            y0 + dst_file * square_w + square_w / 2,
-            x0 + dst_rank * square_h + square_h / 2,
-        )
-        draw_arrow(
-            draw,
-            src_xy,
-            dst_xy,
-            color=(0, 0, 255),
-            width=max(2, int(min(square_w, square_h) // 10)),
-            arrowhead=int(min(square_w, square_h) // 2.5),
+            start,
+            end,
+            color=color,
+            width=line_width,
+            arrowhead=int(min(square_width, square_height) / 2.5),
         )
 
     draw.rectangle(
-        [(0, 0), (cropped_img.width - 1, cropped_img.height - 1)],
+        [(0, 0), (board_image.width - 1, board_image.height - 1)],
         outline=(0, 255, 0),
         width=2,
     )
 
-    if output_path is None:
-        output_path = OUTPUT_PATH
-    cropped_img.save(output_path)
+    output_path = output_path or OUTPUT_PATH
+    board_image.save(output_path)
     return output_path
 
 
 if __name__ == "__main__":
-    import sys
+    from chess_solve import main
 
-    parser = argparse.ArgumentParser(
-        description="Draw the best moves on a chessboard image."
-    )
-    parser.add_argument(
-        "--invert_fen",
-        action="store_true",
-        help="Invert FEN so black pieces are on bottom",
-    )
-    parser.add_argument(
-        "--white_move",
-        required=True,
-        help='The best move for white in UCI format (e.g. "e2e4")',
-    )
-    parser.add_argument(
-        "--black_move", help='The best move for black in UCI format (e.g. "e7e5")'
-    )
-    args = parser.parse_args()
-    white_move = args.white_move
-    black_move = args.black_move
-    out = draw_best_move(
-        white_move, black_move, OUTPUT_PATH, invert_fen=args.invert_fen
-    )
-    print(f"Saved: {out}")
+    raise SystemExit(main())
