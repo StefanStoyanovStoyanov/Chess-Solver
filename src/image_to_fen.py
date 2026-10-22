@@ -6,7 +6,11 @@ from contextlib import closing
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 import numpy as np
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
 import tensorflow as tf
+
+tf.get_logger().setLevel("ERROR")
 
 import chessboard_finder
 import load_image

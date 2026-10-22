@@ -40,6 +40,7 @@ def draw_best_move(
     black_move: str | None = None,
     output_path: str | None = None,
     image_path: str = IMAGE_PATH,
+    black_on_bottom: bool = False,
 ) -> str:
     image = load_image.load_image(image_path)
     corners = chessboard_finder.findChessboardCorners(
@@ -61,9 +62,15 @@ def draw_best_move(
         source = chess.square_name(chess_move.from_square)
         destination = chess.square_name(chess_move.to_square)
         source_file = ord(source[0]) - ord("a")
-        source_rank = 7 - (int(source[1]) - 1)
+        source_rank = int(source[1]) - 1
         destination_file = ord(destination[0]) - ord("a")
-        destination_rank = 7 - (int(destination[1]) - 1)
+        destination_rank = int(destination[1]) - 1
+        if not black_on_bottom:
+            source_rank = 7 - source_rank
+            destination_rank = 7 - destination_rank
+        else:
+            source_file = 7 - source_file
+            destination_file = 7 - destination_file
         start = (
             (source_file + 0.5) * square_width,
             (source_rank + 0.5) * square_height,
