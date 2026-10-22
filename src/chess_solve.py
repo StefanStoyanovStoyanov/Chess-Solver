@@ -1,3 +1,4 @@
+import argparse
 import os
 import sys
 
@@ -28,10 +29,13 @@ def get_valid_orientation_candidates(fen: str) -> list[tuple[str, str, bool]]:
     ]
 
 
-def main() -> int:
+def main(image_path: str = IMAGE_PATH, output_dir: str | None = None) -> int:
     try:
+        output_dir = output_dir or os.path.dirname(OUTPUT_PATH)
+        os.makedirs(output_dir, exist_ok=True)
+
         print("Extracting FEN from image...")
-        fen, _ = get_fen_from_image(IMAGE_PATH)
+        fen, _ = get_fen_from_image(image_path)
         print(f"Predicted FEN: {fen}")
 
         candidates = get_valid_orientation_candidates(fen)
@@ -39,7 +43,6 @@ def main() -> int:
             raise ValueError("Neither board orientation is a valid chess position.")
 
         print("Getting best moves for valid board orientations...")
-        output_base, output_extension = os.path.splitext(OUTPUT_PATH)
         for orientation, candidate_fen, black_on_bottom in candidates:
             print(f"Checking {orientation.replace('_', ' ')}...")
             white_move, black_move = fen_to_best_moves(candidate_fen)
@@ -47,11 +50,13 @@ def main() -> int:
             print(f"Best move for Black: {black_move}")
 
             print("Drawing best moves on board...")
-            output_path = f"{output_base}_{orientation}{output_extension}"
+            output_path = os.path.join(
+                output_dir, f"solved_chessboard_{orientation}.png"
+            )
             output_path = draw_best_move(
                 white_move=white_move,
                 black_move=black_move,
-                image_path=IMAGE_PATH,
+                image_path=image_path,
                 output_path=output_path,
                 black_on_bottom=black_on_bottom,
             )
@@ -70,4 +75,18 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    parser = argparse.ArgumentParser(
+        description="Find best chess moves in an image and save annotated boards."
+    )
+    parser.add_argument(
+        "--image",
+        default=IMAGE_PATH,
+        help="Path to the chessboard image to analyze.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=os.path.dirname(OUTPUT_PATH),
+        help="Directory where solved orientation images will be saved.",
+    )
+    arguments = parser.parse_args()
+    raise SystemExit(main(image_path=arguments.image, output_dir=arguments.output_dir))
