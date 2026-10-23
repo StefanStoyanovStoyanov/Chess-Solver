@@ -2,11 +2,14 @@ import argparse
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT_DIR)
+
+IMAGE_PATH = os.path.join(ROOT_DIR, "images", "chessboard.png")
+OUTPUT_PATH = os.path.join(ROOT_DIR, "images", "solved_chessboard.png")
 
 import chess
 
-from config import IMAGE_PATH, OUTPUT_PATH
 from draw_best_move import draw_best_move
 from fen_to_best_move import fen_to_best_moves
 from image_to_fen import get_fen_from_image

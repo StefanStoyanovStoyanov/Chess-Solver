@@ -1,7 +1,11 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT_DIR)
+
+IMAGE_PATH = os.path.join(ROOT_DIR, "images", "chessboard.png")
+OUTPUT_PATH = os.path.join(ROOT_DIR, "images", "solved_chessboard.png")
 
 import numpy as np
 import chess
@@ -9,7 +13,6 @@ from PIL import ImageDraw
 
 import chessboard_finder
 import load_image
-from config import IMAGE_PATH, OUTPUT_PATH
 
 
 def crop_chessboard(image, corners):

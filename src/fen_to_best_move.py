@@ -1,12 +1,13 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT_DIR)
+
+STOCKFISH_PATH = os.path.join(ROOT_DIR, "models", "stockfish.exe")
 
 import chess
 import chess.engine
-
-from config import STOCKFISH_PATH
 
 
 def get_fen_from_image() -> str:

@@ -3,7 +3,11 @@ import re
 import sys
 from contextlib import closing
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, ROOT_DIR)
+
+IMAGE_PATH = os.path.join(ROOT_DIR, "images", "chessboard.png")
+MODEL_PATH = os.path.join(ROOT_DIR, "models", "image_to_fen_model.pb")
 
 import numpy as np
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
@@ -14,7 +18,6 @@ tf.get_logger().setLevel("ERROR")
 
 import chessboard_finder
 import load_image
-from config import IMAGE_PATH, MODEL_PATH
 
 
 def shorten_fen(fen: str) -> str:
